@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "lab.h"
+
 extern int yylex();
 extern int yyparse();
 extern int yyerror(const char *msg);
@@ -41,7 +42,7 @@ extern int yyerror(const char *msg);
 %token <name> WRITESY
 
 %token <name> IDENT
-
+ 
 %token PERIOD
 %token SEMI
 %token COMMA
@@ -54,7 +55,7 @@ extern int yyerror(const char *msg);
 %left <val> ADDOP
 %left <val> MULOP
 
-%token INTCONST /* Type for this, both val and name ? name else error ? */
+%token <name> INTCONST /* Type for this, both val and name ? name else error ? */
 
 %token OTHERSY
 
@@ -72,7 +73,7 @@ extern int yyerror(const char *msg);
 	/* Actions can be interplaced with symbols. */
 
 
-prog 	    :   PROGSY IDENT SEMI dekllist fndekllist compstat PERIOD 	{/*EMPTY*/}
+prog 	    :   PROGSY IDENT SEMI dekllist fndekllist compstat PERIOD 	{printf("\n\n%s %s %d", $1, $2, $<val>4);}
 dekllist    :   dekllist dekl											{/*EMPTY*/}
             |   dekl													{/*EMPTY*/}
 dekl        :   type idlist SEMI										{/*EMPTY*/}
@@ -120,15 +121,19 @@ arglist     :   exprlist												{/*EMPTY*/}
 	/* The followin routines are needed in this part of the file */
 	/* yyerror()	*/
 	/* main()	*/
- 
+
+
 
 int yyerror(const char *msg)
 {
-fprintf(stderr, "Error: %s\n", msg);
-return 0;
+	fprintf(stderr, "Error: %s\n", msg);
+	return 0;
 }
+
+
+
 int main(int argc, char **argv)
 {
-yyparse();
-return 0;
+	yyparse();
+	return 0;
 }
