@@ -18,7 +18,7 @@ struct _symbol tempvars[6] =    	/* temporary variables */
 	{"temp5" ,0, TEMP, 0, 0, 0, SNULL}
 };
 
-static SYMBOL symbtab = SNULL;
+SYMBOL symbtab = SNULL;
 
 /* SYMBOL TABLE ROUTINES  */
 
@@ -48,6 +48,27 @@ SYMBOL insert(char *name, int type, int class)
 	return(r);
 }
 
+/* destroy - remove all elements from symbtab */
+void destroy()
+{
+	SYMBOL temp;
+	if( symbtab == SNULL ) return;
+
+	temp=symbtab;
+	while(symbtab->nextsym!=SNULL)
+	{
+
+		symbtab=symbtab->nextsym;
+		free(temp);
+		temp=symbtab;
+
+	}
+
+	free(symbtab);
+	symbtab=SNULL;
+
+}
+
 /* lookup - search for name in symbol table */
 SYMBOL lookup(char *s)
 {
@@ -75,7 +96,7 @@ SYMBOL emit(int op, SYMBOL a1, SYMBOL a2, int jmp)
 		fprintf(stderr, "gen: run out of space for temp.vars.\n");
 		exit(1);
 	}
-	if (op < EQ) {		/* Use temporary variable */
+	if (op < EQ || op == CALL) {		/* Use temporary variable */
 		p = tempvars + tempcount;
 		p->offset = tempcount++;   /* Offset for temp.vars.=tempno */
 	}
@@ -128,6 +149,14 @@ void backpatch(QUADLIST l, int a)
 		} while (l != QNULL);
 }
 
+void printQList( QUADLIST l, const char *s ){
+	if (l != QNULL)
+		do {
+			printf( "%s: %d\n", s, l->adr);
+			l= l->nxt;
+		} while (l != QNULL);
+}
+
 /* OUTPUT ROUTINES */
 
 char *typ[5]  = {
@@ -146,16 +175,19 @@ char *op[100] = {
      "", "", "", "", "", "", "", "", "", "",
      "", "", "", "", "", "", "", "", "", "",
      "", "", "", "", "", "", "", "", "", "",
-     "", "", "", "", "", "", "", "", "", "HALT"  };
+     "", "", "", "", "", "", "", "FSTART", "FEND", "HALT"  };
 
 FILE *ptree;	/* file for output */
 
 void printsymbtab(void)
 {
 	SYMBOL sp;
-	for (sp = symbtab; sp != SNULL; sp = sp->nextsym)
-		fprintf(ptree, "%-9.9stype %s class %s offset%3d\n",
-		sp->id, typ[sp->type], cl[sp->class], sp->offset);
+	for (sp = symbtab; sp != SNULL; sp = sp->nextsym){
+		fprintf(ptree, "%-9.9stype %s class %s offset%3d level%3d\n",
+		sp->id, typ[sp->type], cl[sp->class], sp->offset, sp->level);
+	}
+
+
 }
 
 void printmcode(void)
