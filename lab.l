@@ -129,8 +129,8 @@ INT             [0-9]+
 void echoo()
 {
 	if (position==1)
-		printf("%5d :",lineno);
-	printf("%s",yytext);
+	//	printf("%5d :",lineno);
+	//printf("%s",yytext);
 	position+=yyleng;
 }
 
