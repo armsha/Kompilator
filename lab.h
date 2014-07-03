@@ -41,6 +41,8 @@
 #define PARAM   32           /* function parameter */
 #define CALL    33           /* call to function */
 #define RETURN  34           /* return from function */
+#define FSTART  97
+#define FEND 	98
 #define	HALT    99	     /* halt execution */
 
 
@@ -72,6 +74,7 @@ typedef struct _symbol *SYMBOL;
 /* Symbol table routines */
 SYMBOL insert(char *, int, int);
 SYMBOL lookup(char *);
+void destroy();
 
 /* Stuff for generating intermediate code */
 #define MAXCODE  200
@@ -101,6 +104,7 @@ struct _expression {                   /* boolean expression */
 /* Routines and necessary variables for manipulating intermediate code */
 QUADLIST makelist(int);
 QUADLIST merge(QUADLIST, QUADLIST);
+void printQList( QUADLIST l, const char *s );
 
 SYMBOL emit(int, SYMBOL, SYMBOL, int);
 
