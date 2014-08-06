@@ -29,8 +29,10 @@ SYMBOL insert(char *name, int type, int class)
 	r = symbtab;
 	while (r != SNULL)
 		if (strcmp(r->id, name) == 0) {
-			if (class != CONST)
+			if (class != CONST){
+				printf("%s: ", name);
 				tblerror("identifier multiply declared");
+			}
 			return(r);
 		} else
 			r = r->nextsym;
@@ -49,7 +51,7 @@ SYMBOL insert(char *name, int type, int class)
 }
 
 /* destroy - remove all elements from symbtab */
-void destroy()
+void SYMBTABdestroy()
 {
 	SYMBOL temp;
 	if( symbtab == SNULL ) return;
@@ -76,6 +78,8 @@ SYMBOL lookup(char *s)
 	for (sp = symbtab; sp != SNULL; sp = sp->nextsym)
 		if (strcmp(sp->id, s) == 0)
 			return(sp);
+
+	printf("%s: ", s);
 	tblerror("identifier not declared");    /* id not found */
 	return(insert(s, NOTYPE, UNDEF));
 }
@@ -140,13 +144,30 @@ QUADLIST makelist(int quad)
 	}
 }
 
+void QUADLISTdestroy( QUADLIST l ){
+	QUADLIST tmp;
+	if (l != QNULL)
+	do {
+		tmp = l->nxt;
+		free( l );
+		l= tmp;
+	} while (l != QNULL);
+}
+
 void backpatch(QUADLIST l, int a)
 {
+
+	QUADLIST tmp;
+	tmp = l;
+
 	if (l != QNULL)
 		do {
 			mcodetab[l->adr].target = a;
 			l= l->nxt;
 		} while (l != QNULL);
+
+	QUADLISTdestroy(tmp);
+
 }
 
 void printQList( QUADLIST l, const char *s ){
@@ -160,7 +181,7 @@ void printQList( QUADLIST l, const char *s ){
 /* OUTPUT ROUTINES */
 
 char *typ[5]  = {
-     "", "INTEGER", "", "", "NOTYPE " };
+     "", "INTEGER", "FLOAT", "", "NOTYPE " };
 
 char *cl[7]   = {
      "", "VAR  ", "FUNC ", "PAR  ", "CONST", "TEMP ", "UNDEF"  };

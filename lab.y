@@ -2,7 +2,10 @@
 	/*** Deklaration section ***/
     
 %{
+
 	/* C-Code copied to  y.tab.c */
+
+	/* Code to include */
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,12 +13,14 @@
 #include "lab.h"
 #include "stack.h"
 
+	/* extermal functions */
 extern int yylex();
 extern int yyparse();
 extern int yyerror(const char *msg);
 extern void printsymbtab();
 extern void printmcode();
 
+	/* struct for id-list used in deklarations ond so on. */
 struct _idlist {
 	char name[MAXIDLENGTH];
 	struct _idlist *next;
@@ -23,6 +28,7 @@ struct _idlist {
 typedef struct _idlist *IDLIST;
 #define IDNULL (IDLIST) NULL
 
+	/* struct for a namespace scope, keeping track of what's necessary */
 struct _scope {
 
 	SYMBOL symbtabl;
@@ -31,7 +37,7 @@ struct _scope {
 };
 typedef struct _scope *SCOPE;
 
-
+	/* Function declarations for the id-list */
 IDLIST makeIDlist( void );
 IDLIST insertIDlist( IDLIST dl, char *name );
 IDLIST concatIDlist( IDLIST dl1, IDLIST dl2 );
@@ -39,12 +45,16 @@ char * topIDlist( IDLIST dl );
 IDLIST popIDlist( IDLIST dl );
 void printIDlist( IDLIST dl );
 
+	/* Function heads for scope, stack, and symbol handling */
 SYMBOL newSymb( char *name, int type, int class );
 void newScope( void );
 void downScope( char * id );
+void destroyTrashStack(void);
 
-extern SYMBOL symbtab;
-STACK scopeStack;
+	/* !!! Global variables !!! */
+extern SYMBOL symbtab;	/* The current symbol table, from table.c ! */
+STACK scopeStack;		/* The earlier scopes */
+STACK trashStack;		/* scopes to remove */
 
 
 
@@ -55,6 +65,7 @@ STACK scopeStack;
 	/* %start <name> */
 	/* %left and others */
 
+	/* union for the different yylval values */
 %union {
 	
 	int val;
@@ -76,11 +87,14 @@ STACK scopeStack;
 %token <name> FUNCSY
 %token <name> IFSY
 %token <name> INTSY
+%token <name> FLOATSY
 %token <name> PROGSY
 %token <name> READSY
 %token <name> THENSY
 %token <name> WHILESY
 %token <name> WRITESY
+%token <name> REPEATSY
+%token <name> UNTILSY
 
 %token <name> IDENT
  
@@ -97,12 +111,12 @@ STACK scopeStack;
 %left <val> MULOP
 
 %token <name> INTCONST /* Type for this, both val and name ? name else error ? */
+%token <name> FLOATCONST
 
 %token OTHERSY
 
 	/* Special Tokens */
 %type <val> Mark1
-%type <val> Mark2
 %type <nextlist> Ntok
 
 	/* Type defs */
@@ -132,13 +146,12 @@ STACK scopeStack;
 
 
 prog 	    :   PROGSY 
-				{  
-					newScope();
-				}
 				IDENT 
 				{
-					newSymb( $3, INTEGER, FUNC );
-					emit( FSTART, lookup($3), SNULL, 0 );
+					/* Make new symbol, and scope, and send command Fstart. */
+					newScope();
+					newSymb( $2, INTEGER, FUNC );
+					emit( FSTART, lookup($2), SNULL, 0 );
 				}
 				SEMI 
 				dekllist 
@@ -146,20 +159,22 @@ prog 	    :   PROGSY
 				compstat 
 				PERIOD  
 				{  
+					/* Send stop command, and step down a scope */
 					emit( HALT, SNULL, SNULL, 0 );
-					emit( FEND, lookup($3), SNULL, 0 );
+					emit( FEND, lookup($2), SNULL, 0 );
 
-					downScope( $3 );
-					newSymb( $3, INTEGER, FUNC );				
+					downScope( $2 );
+					newSymb( $2, INTEGER, FUNC );				
 				}
 			;
 
-dekllist    :   dekllist dekl											{/*EMPTY*/}
-            |   dekl													{/*EMPTY*/}
+dekllist    :   dekllist dekl		{/* Taken care of in dekl */}
+            |   dekl				{/* Taken care of in dekl */}
             ;
 
 dekl        :   type idlist SEMI										
 			{  
+				/* Get ID-List, and make new symbols with correct type */
 				int typeval = $1; 
 				IDLIST dl = $2;
 				while( dl != IDNULL ){ 
@@ -170,11 +185,21 @@ dekl        :   type idlist SEMI
 			}
             ;
 
-type        :   INTSY													{ $<val>$ = INTEGER; }
+type        :   INTSY													
+			{ 	
+				/* Currently only INTEGER type, but this way more could be added */
+				$<val>$ = INTEGER;	
+			}
+			|	FLOATSY
+			{
+				/* Testing other type */
+				$<val>$ = FLOAT;
+			}
             ;
 
 idlist      :   idlist COMMA IDENT										
 			{ 
+				/* Continue the idlist with the new id appended */
 				IDLIST dl = makeIDlist(); 
 				dl = insertIDlist( dl, $3 );
 				dl = concatIDlist( $1, dl );
@@ -182,6 +207,7 @@ idlist      :   idlist COMMA IDENT
 			}
             |   IDENT													
             { 
+            	/* Start a new idlist containing IDENT */
             	IDLIST dl = makeIDlist(); 
             	dl = insertIDlist( dl, $1 ); 
             	$<identlist>$ = dl;  
@@ -189,8 +215,8 @@ idlist      :   idlist COMMA IDENT
             ;
 
 
-fndekllist  :   fndekllist fndekl										{/*EMPTY*/}
-            |   														{/*EMPTY*/}
+fndekllist  :   fndekllist fndekl			{/* Taken care of in fndekl */}
+            |   							{/* Can be empty */}
             ;
 
 
@@ -199,6 +225,7 @@ fndekl      :   {
 				}
 				fnhead 
 				{
+					/* Fnhead has added function symbol to the new scope */
 					emit( FSTART, lookup($2), SNULL, 0 );
 				}
 				dekllist 
@@ -206,10 +233,12 @@ fndekl      :   {
 				compstat
 				SEMI
 				{  
+					/* Output end command and change scope, allow symbol for function there aswell */
 					SYMBOL s;
 					emit( FEND, lookup($2), SNULL, 0 ); 
 					s = lookup( $2 );
 					downScope( $2 );
+
 					newSymb( s->id, s->type, FUNC );
 				}
             ;
@@ -224,32 +253,31 @@ fnhead      :   FUNCSY
 				type 
 				SEMI
 				{
-					newSymb( $2, $7, FUNC ); /* Return? */
-					/* Chack where to put scope, and names */
-					/* Are all the dekllists... same things ? */
+					/* Make a new symbol and return the name */
+					newSymb( $2, $7, FUNC );
 					strcpy( $$, $2 );
 				}
             ;
 
 
-parlist     :   dekllist												{/*EMPTY*/}
-            |   														{/*EMPTY*/}
+parlist     :   dekllist												
+				{ /* Taken care of in dekllist */ }
+            |   														
+            	{/*EMPTY*/}
             ;
 
 
 fname       :   IDENT													
-				{ strcpy( $$, $1 ); }
+				{ /* Just get the name */ strcpy( $$, $1 ); }
             ;
 
 Mark1		:	{
-					$$ = nextquad;
-				}
-			;
-Mark2		:	{
+					/* Marker for next code-row returned as val */
 					$$ = nextquad;
 				}
 			;
 Ntok		:	{
+					/* Return a nextlist for a returned goto-row */
 					$$ = makelist(nextquad);
             		emit( GOTO, SNULL, SNULL, -1);
             	
@@ -261,6 +289,7 @@ compstat    :   BEGINSY
 				Mark1
 				ENDSY									
 				{ 
+					/* Make sure we continue from the correct spot */
 					backpatch($2, $3);
 					$$ = $2; 
 				}
@@ -268,7 +297,8 @@ compstat    :   BEGINSY
 
 
 statlist    :   statlist Mark1 stat											
-				{ /* $$ = merge( $1, $2 ); ??? */
+				{ 
+					/* Make sure the first part continues with the second */
 					backpatch( $1, $2 );
 					$$ = $3;
 				}
@@ -282,8 +312,10 @@ stat        :   compstat
 					$$ = $1;
 				}
             |   IFSY expr THENSY Mark1 stat Ntok
-            	ELSESY Mark2 stat						
+            	ELSESY Mark1 stat						
             	{
+            		/* Have false and true options continue from the correct points 
+            			Also make sure they continue correctly, using a merged nextlist */
             		QUADLIST q;
             		backpatch( $2.truelist, $4 );
             		backpatch( $2.falselist, $8 );
@@ -291,8 +323,9 @@ stat        :   compstat
             		q = merge( q, $9 );
             		$$ = q;
             	}
-            |   WHILESY Mark1 expr DOSY Mark2 stat									
+            |   WHILESY Mark1 expr DOSY Mark1 stat									
             	{
+            		/* Have the code jump back and continue according to expr */
             		backpatch( $6, $2 );
             		backpatch( $3.truelist, $5 );
             		$$ = $3.falselist;
@@ -300,6 +333,9 @@ stat        :   compstat
             	}
             |   WRITESY LPAREN exprlist RPAREN SEMI						
             	{
+
+            		/* Make a list of expressions to print, reverse and output it */
+
             		STACK s, t;
             		t = STACKempty();
             		s = $3;
@@ -307,7 +343,7 @@ stat        :   compstat
             			t = STACKpush( t, STACKtop(s) );
             			s = STACKpop( s, NULL );
             		}
-
+            		/* reversed order emits */
             		while( !STACKisEmpty(t) ){
             			emit( WRITE, STACKtop(t), SNULL, 0 );
             			t = STACKpop( t, NULL );
@@ -318,10 +354,13 @@ stat        :   compstat
 
 
             		$$ = QNULL;
-            		/* $$ = makelist( nextquad ); */ 
+
             	}
             |   READSY LPAREN idlist RPAREN SEMI						
             	{ 
+
+            		/* Output commands for each id in the idlist */
+
             		IDLIST dl = $3; 
             		while( dl != IDNULL ){  
             			emit( READ, lookup(dl->name), SNULL, 0 );
@@ -330,38 +369,42 @@ stat        :   compstat
 
 
             		$$ = QNULL;
-            		/* $$ = makelist( nextquad ); */ 
+
             	}
             |   IDENT ASSIGN expr SEMI									
             	{ 
+
+            		/* Also fname, handeled via symbol class */
             		SYMBOL s = lookup( $1 );
             		if( s->class == FUNC ){
-            			emit( RETURN, $3.place, SNULL, 0 ); /* Maybe goto? */
+            			emit( RETURN, $3.place, SNULL, 0 ); 
             		}else{
             			emit( ASS, lookup($1), $3.place, 0 ); 
             		}
 
-
             		$$ = QNULL;
-            		/* $$ = makelist( nextquad ); */ 
-            	}
-           // |   fname ASSIGN expr SEMI									
-            //	{
-            		/*RETURN*/
-            		/* Beware; Both fname and IDENT same, and stuff */
 
-            //	}
-            /*|	REPEATSY stat UNTILSY expr SEMI 						{EMPTY}  */
+            	}
+            |	REPEATSY Mark1 stat UNTILSY Mark1 expr SEMI 						
+            	{
+            		/* Added rule, making sure the expression leads to the correct place */
+
+            		backpatch( $6.falselist, $2 );
+            		backpatch( $3, $5 );
+
+            		$$ = $6.truelist;
+            	}  
             ;
 
 
 exprlist    :   exprlist COMMA expr										
 				{ 
-					/*Maybe List and return? */
-					$$ = STACKpush( $$, $3.place ); 
+					/* Add an expr to the stack */
+					$$ = STACKpush( $1, $3.place ); 
 				}
             |   expr													
             	{ 
+            		/* Start a new stack with one element */
             		STACK s = STACKempty();
             		s = STACKpush( s, $1.place );
             		$$ = s;
@@ -371,6 +414,8 @@ exprlist    :   exprlist COMMA expr
 
 expr        :   aexp RELOP aexp											
 				{
+
+					/* Make true/false-list and make goto according to operator result */
 					$$.truelist  = makelist(nextquad);
 					$$.place = emit( $2, $1.place, $3.place, -1 );
 					$$.falselist = makelist(nextquad);
@@ -380,6 +425,7 @@ expr        :   aexp RELOP aexp
 				}
             |   aexp													
             	{
+            		/* Accept the aexp values */
 					$$.place = $1.place; 
             		$$.truelist  = $1.truelist;
 					$$.falselist = $1.falselist;
@@ -389,30 +435,45 @@ expr        :   aexp RELOP aexp
 
 aexp        :   aexp ADDOP aexp											
             	{
+            		/* Output command */
             		$$.place = emit($2, $1.place, $3.place, 0);
             	}										
             |   aexp MULOP aexp											
             	{
+            		/* Output command */
             		$$.place = emit($2, $1.place, $3.place, 0);
             	}
             |   fname LPAREN arglist RPAREN																		
             	{
+            		/* Output command, calling the function, arglist takes care of params */
             		$$.place = emit( CALL, lookup($1), SNULL, 0 );
             	}
             |   LPAREN expr RPAREN																				
             	{
+            		/* Return the expression */
             		$$.place = $2.place;
             		$$.truelist = $2.truelist;
             		$$.falselist = $2.falselist;
             	}
             |   IDENT																							
             	{
+
+            		/* Lookup the id */
             		$$.place = lookup($1);
 
             	}
             |   INTCONST												
             	{ 
+
+            		/* Make new const symvol */
             		$$.place = newSymb( $1, INTEGER, CONST ); 
+
+            	}
+            |   FLOATCONST												
+            	{ 
+
+            		/* Make new const symvol */
+            		$$.place = newSymb( $1, FLOAT, CONST ); 
 
             	}
             ;
@@ -420,7 +481,10 @@ aexp        :   aexp ADDOP aexp
 
 
 arglist     :   exprlist												
-				{ 	/* Actually emit param here? */
+				{ 	
+
+					/* Collect all the expressions in a stack, 
+						emmiting them as params in revere (correct) order */
 					STACK s,t;
             		s = $1;
             		t = STACKempty();
@@ -435,6 +499,7 @@ arglist     :   exprlist
 
             		STACKdestroy( s, NULL ); 
             		STACKdestroy( t, NULL ); 
+
 				}
             |   { /* No Params to emit! */ }
             ;
@@ -451,18 +516,26 @@ arglist     :   exprlist
 	/* main()	*/
 
 
+/* Take care of adding a new symbol and all related tasks */
 SYMBOL newSymb( char *name, int type, int class ){
 
 	SYMBOL s;
 	s = insert( name, type, class );
-	offsetnow++;
+
+	if ( class != CONST && class != FUNC )
+		offsetnow++;
+
 	return s;
 }
 
+/* Make a new scope, with old pushed to scopeStack
+ * As when making a new function */
 void newScope(){
 
 	/* Make new scope frame */
 	SCOPE s;
+	/*SYMBOL symb;*/
+
 	if( ( s = (SCOPE)malloc( sizeof( struct _scope ) ) ) == (SCOPE)NULL ){
 		perror("Error while mallocating scope frame");
 		exit(1);
@@ -480,19 +553,38 @@ void newScope(){
 	offsetnow = 0;
 	symbtab = SNULL;
 
+	/* GO WITH FULL DECLARATION INSTEAD! Insert old symbols still visible */ 
+	/*symb = s->symbtabl;
+	while( symb != SNULL ){
+		insert( symb->id, symb->type, symb->class );
+		symb = symb->nextsym;
+	}*/
+
 }
 
+/* Take down and pick up the old stack from scopeStack,
+ * Also push the used one for removal at thrashStack */
 void downScope( char *id ){
 
 	SCOPE s;
+	/*SYMBOL symb;*/
+
+	/* GO WITH FULL DECLARATION INSTEAD!  Remove earlier, still visible scope entries */
+	/*symb = s->symbtabl;
+	while( symb != SNULL ){
+		if( symb->level != currentlevel )
+			symb->
+		symb = symb->nextsym;
+	}*/
 
 	/* Output this scope */
 	fprintf( ptree, "\n%s:\n", id );
 	printsymbtab(); 
 
 	/* Remove this scope */
-	/*destroy();
-	 Beware mcode printing using symbols */
+	/*SYMBTABdestroy(); */
+	trashStack = STACKpush( trashStack, symbtab ); 
+	/* Beware mcode printing using symbols */
 
 	/* Reinstate the previous scope */
 	s = STACKtop( scopeStack ); 
@@ -500,17 +592,31 @@ void downScope( char *id ){
 	offsetnow = s->offset;
 
 	/* Destroy scope and continue */
-	scopeStack = STACKpop( scopeStack, NULL );
-	free( s );
+	scopeStack = STACKpop( scopeStack, free );
 	currentlevel--; 
 
 }
 
+/* Go through and destroy all scopes in the trashStack */
+void destroyTrashStack(void){
+
+	SYMBTABdestroy();
+	while( !STACKisEmpty( trashStack ) ){
+		symbtab = STACKtop( trashStack );
+		trashStack = STACKpop( trashStack, NULL );
+		SYMBTABdestroy();
+	}
+	STACKdestroy(trashStack,NULL);
+
+}
+
+/* make a new IDList */
 IDLIST makeIDlist( void ){
 	return IDNULL;
 
 }
 
+/* Insert a id to a idlist, that's returned */
 IDLIST insertIDlist( IDLIST dl, char *name ){
 	
 	IDLIST new;
@@ -527,6 +633,7 @@ IDLIST insertIDlist( IDLIST dl, char *name ){
 
 }
 
+/* Concatenate two Id-lists, the result returned */
 IDLIST concatIDlist( IDLIST dl1, IDLIST dl2 ){
 	
 	IDLIST tmp, last; 
@@ -546,13 +653,14 @@ IDLIST concatIDlist( IDLIST dl1, IDLIST dl2 ){
 
 }
 
-
+/* Get the id stored in the top of a idlist */
 char * topIDlist( IDLIST dl ){
 	
 	return dl->name;
 
 }
 
+/* Pop an element of the idlist */
 IDLIST popIDlist( IDLIST dl ){
 	
 	IDLIST n = dl->next;
@@ -561,7 +669,7 @@ IDLIST popIDlist( IDLIST dl ){
 
 }
 
-
+/* Print an entire idlist */
 void printIDlist( IDLIST dl ){
 	
 	while( dl != IDNULL ){ 
@@ -571,6 +679,7 @@ void printIDlist( IDLIST dl ){
 
 }
 
+/* Print during error */
 int yyerror(const char *msg)
 {
 	fprintf(stderr, "Error: %s\n", msg);
@@ -581,13 +690,26 @@ int yyerror(const char *msg)
 
 int main(int argc, char **argv)
 {
+
+	/* initialize global variables */
 	scopeStack = STACKempty();
-	ptree = stdout;
+	trashStack = STACKempty();
+
+	ptree = stdout; /* Print to stdout */
+
+	/* Perform parse, also printing symbtabs */
 	yyparse();
-	printf( "\n\n");
-	/* printsymbtab(); */
+
+	fprintf( ptree, "\nMain Scope:\n" );
+	printsymbtab(); 
+
+	/* Print the mcodetab */
+	printf( "\n");
 	printmcode();
-	destroy();
+	
+	/* Free allocated memory */
+	destroyTrashStack();
 	STACKdestroy(scopeStack,NULL);
+	
 	return 0;
 }

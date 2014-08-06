@@ -1,6 +1,7 @@
 %{
 #include        "lab.h"
 #include        "y.tab.h"
+#include	"idlist.c"
 
 #include	<ctype.h>     /*makes e.g "tolower" enable*/
 
@@ -23,14 +24,11 @@ struct key {
 	"else",ELSESY,
 	"end", ENDSY,
 	"function",FUNCSY,
-	"float", FLOATSY,
 	"if", IFSY,
 	"integer", INTSY,
 	"program", PROGSY,
 	"read", READSY,
-    "repeat", REPEATSY,
 	"then", THENSY,
-	"until", UNTILSY,
 	"while",WHILESY,
 	"write",WRITESY
 };
@@ -71,18 +69,6 @@ INT             [0-9]+
 			return IDENT;
 		else
 			return keytab[res].symb;
-	}
-}
-
-{INT}"."{INT}		{
-	/* Floatpoint number */
-	echoo();
-	if( yyleng>=MAXIDLENGTH ){
-		yylval.val = 0;
-		error(4); /* What errnum? */
-	}else{
-		strcpy(yylval.name,yytext);
-		return FLOATCONST;
 	}
 }
 
@@ -143,9 +129,9 @@ INT             [0-9]+
 /*echoo() - echo linenumber and yytext*/
 void echoo()
 {
-	/*if (position==1)
+	if (position==1)
 		printf("%5d :",lineno);
-	printf("%s",yytext); */
+	printf("%s",yytext);
 	position+=yyleng;
 }
 

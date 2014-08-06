@@ -1,6 +1,6 @@
 CC		=	gcc
 OBJS	=	y.tab.o table.o lex.yy.o stack.o
-CFLAGS	=	-Wall -pedantic -g
+CFLAGS	=	-Wall -pedantic
 YACC	=	yacc -d
 LEX		=	lex
 

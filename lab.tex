@@ -1,1 +1,556 @@
-% Texfil
+% Settings
+\documentclass[10pt, titlepage, oneside, a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary {positioning,fit, matrix,calc}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{verbatim}
+\usepackage[english]{babel}
+\usepackage{algorithm2e}
+\usepackage{ctable, hhline}
+\usepackage{listings}
+\usepackage{pdfpages}
+\usepackage{float}
+\usepackage{textcomp}
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+\usepackage{pgfplots}
+\usepackage{multicol}
+\usepackage{hyperref}
+\usepackage{amssymb, graphicx, fancyhdr,  tikz-timing}
+\addtolength{\textheight}{20mm}
+\addtolength{\voffset}{-5mm}
+\renewcommand{\sectionmark}[1]{\markleft{#1}}
+\newcommand{\textoverline}[1]{$\overline{\mbox{#1}}$}
+
+% \Section command
+\newcommand{\Section}[1]{\section{#1}\vspace{-4pt}}
+\newcommand{\Subsection}[1]{\vspace{-4pt}\subsection{#1}\vspace{-4pt}}
+\newcommand{\Subsubsection}[1]{\vspace{-4pt}\subsubsection{#1}\vspace{-8pt}}
+
+% appendices, \appitem och \appsubitem 
+\newcounter{appendixpage}
+
+\newenvironment{appendices}{
+	\setcounter{appendixpage}{\arabic{page}}
+	\stepcounter{appendixpage}
+}{
+}
+
+\newcommand{\appitem}[2]{
+	\stepcounter{section}
+	\addtocontents{toc}{\protect\contentsline{section}{\numberline{\Alph{section}}#1}{\arabic{appendixpage}}}
+	\addtocounter{appendixpage}{#2}
+}
+
+\newcommand{\appsubitem}[2]{
+	\stepcounter{subsection}
+	\addtocontents{toc}{\protect\contentsline{subsection}{\numberline{\Alph{section}.\arabic{subsection}}#1}{\arabic{appendixpage}}}
+	\addtocounter{appendixpage}{#2}
+}
+
+
+% fix headers
+\makeatletter
+\renewcommand\tableofcontents{%
+	\section*{\contentsname
+		\@mkboth{%
+			%           \MakeUppercase\contentsname}{\MakeUppercase\contentsname}}% DELETED
+			\MakeUppercase\contentsname}{}}% ADDED
+			\@starttoc{toc}%
+			} 
+\makeatother
+
+
+% paragraphs
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{3mm}
+
+% Names
+\def\inst{Datavetenskap}
+\def\typeofdoc{Exercise}
+\def\course{DV3: Kompilatorns första faser - 5DV156}
+\def\pretitle{}
+\def\title{Uppgifter}
+\def\name{Oskar Ottander}
+\def\username{c12oor}
+\def\email{\username{}@cs.umu.se}
+\def\graders{Mikael Rännar}
+\def\path{edu/dv3/comp}
+
+% path
+\def\fullpath{\raisebox{1pt}{$\scriptstyle \sim$}\username/\path}
+
+
+%Document start
+\begin{document}
+
+% Front
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{large}
+\begin{tabular}{@{}p{\textwidth}@{}}
+\textbf{UMEÅ UNIVERSITET \hfill \today} \\
+		\textbf{Institutionen för }\\
+		\textbf{\inst} \\
+		\textbf{\typeofdoc} \\
+		\end{tabular}
+		\end{large}
+		\vspace{10mm}
+		\begin{center}
+		% \LARGE{\pretitle} \\
+			\huge{\textbf{\course}}\\
+			\vspace{10mm}
+			\LARGE{\title} \\
+				\vspace{15mm}
+				\begin{large}
+				\begin{tabular}{ll}
+				\textbf{Name} 
+					& \name \\
+					\textbf{E-mail} 
+					& \texttt{c12oor@cs.umu.se} \\
+					\textbf{Path} & \texttt{\fullpath}\\                
+					\end{tabular}\\
+
+					\end{large}
+					\vfill
+					\large{\textbf{Tutors}}\\
+						\mbox{\large{\graders}}
+						\end{center}
+						\end{titlepage}
+
+
+						% fixar sidfot
+						\lfoot{\footnotesize{\name}}
+						\rfoot{\footnotesize{\today}}
+						\lhead{\sc\footnotesize\title}
+						\rhead{\nouppercase{\course}}
+						\pagestyle{fancy}
+						\renewcommand{\headrulewidth}{0.2pt}
+						\renewcommand{\footrulewidth}{0.2pt}
+
+
+						% Pagebreak
+						\newpage
+						\pagenumbering{arabic}
+
+
+	
+	\Section{ Uppgift 3 }
+						
+		
+Givet följande grammatik:
+
+		$\begin{aligned} 
+			A & \to < B E D > \\
+			B & \to < > \\
+			 & \to E : A \\
+			E & \to ( E ) \\
+			 & \to \epsilon \\
+			D & \to < > D \\
+			 & \to \epsilon \\
+		\end{aligned}$
+
+Terminalsymboler =  \{ <, >, :, (, ) \} och Startsymbol $= A$.
+
+Konstruera FIRST- och FOLLOW-mängderna för grammatikens icketerminaler.
+		
+	\subsection{Lösning}
+		Ett litet program byggdes i Python kapabelt att läsa in och representera en grammatik. Metoder \textit{first} och \textit{follow} lades till vilka uträttar algoritmerna beskrivna i föreläsnings-slidesen.
+		
+		Python-koden för grammatikhanteraren kan hittas vid \path.
+			
+	\subsection{Resultat}
+	
+		\begin{center}
+		\begin{table}[h!]
+		\begin{tabular}{ c | c | c}
+		\textbf{Icketerminal} & \textbf{FIRST} & \textbf{FOLLOW} \\ \hline
+		A & < & ( < > \$ \\
+		B & ( : <  & ( < > \\
+		E & ( $\epsilon$ & ) : < >\\
+		D & < $\epsilon$ & > \\
+		
+		\end{tabular}
+		\end{table}
+		\end{center}
+						
+
+		\pagebreak
+
+	\Section{ Uppgift 6 }
+	
+	Givet följande grammatik:
+	
+		$\begin{aligned} 
+			A & \to a b c B \\
+			 & \to a b d B \\
+			 & \to A B \\
+			B & \to q \\
+		\end{aligned}$
+		
+	Terminalsymboler  = \{ a b c d q \}, och startsymbol A.
+	
+	\begin{itemize}
+
+	\item Skapa mängderna LR(0)-items.
+	\item Konstruera en SLR(1)-tabell för grammatiken.
+	\item Visa hur SLR-parsning av strängen; a b c q q, ser ut.	
+	
+	\end{itemize}
+		
+	\subsection{Lösning}
+	
+		Det grammatikhanterande programmet nämnt i uppgift 3 utökades här med metoderna \textit{closure}, \textit{goto}, och \textit{lr(0)item}. Dessa fungerar som algoritmerna presenterade under föreläsningarna, och används vid skapandet av en SLR-tabell. Denna  tabell består dels av en aktivitetstabell, en gototabell, och en regeluppräkning. De olika delarna i tabellen används vid parsning, en enkel version av vilken också implementerats.
+		
+		Då programmet nu startas försöker den läsa in en grammatik, med icketerminaler, terminaler, regler, och	startsymbol i denna ordning. Sedan skrivs den ut, görs om så att den har en enkel startregel, skrivs ut igen. Efter detta skapas first, follow och tabell, och dessa skrivs ut. Användaren får sedan mata in en sträng som ska parsas, och programmet skriver ut vilka regler som används i vilken ordning, och om strängen accepteras. Detta förutsätter att grammatiken är korrekt SLR, och matas in bra, och så vidare.
+		
+		
+		\pagebreak
+	\subsection{Resultat}
+	
+	\subsubsection{LR(0)-Items}
+
+
+Items:\\
+
+	\begin{multicols}{3}
+Item 0	goto( -, \$ ):\\
+	A' ::= . A\\
+	A ::= . a b d B\\
+	A ::= . A B\\
+	A ::= . a b c B\\
+	
+Item 1	goto( 0, A ):\\
+	A' ::= A .\\
+	A ::= A . B\\
+	B ::= . q\\
+	
+Item 2	goto( 0, a ):\\
+	A ::= a . b d B\\
+	A ::= a . b c B\\
+	
+\columnbreak	
+
+Item 3	goto( 1, B ):\\
+	A ::= A B .\\
+	
+Item 4	goto( 1, q ):\\
+	B ::= q .\\
+	
+Item 5	goto( 2, b ):\\
+	A ::= a b . d B\\
+	A ::= a b . c B\\
+	
+Item 6	goto( 5, c ):\\
+	A ::= a b c . B\\
+	B ::= . q\\
+
+\columnbreak	
+	
+Item 7	goto( 5, d ):\\
+	A ::= a b d . B\\
+	B ::= . q\\
+	
+Item 8	goto( 6, B ):\\
+	A ::= a b c B .\\
+	
+Item 9	goto( 7, B ):\\
+	A ::= a b d B .\\
+	
+\end{multicols}	
+
+	\pagebreak
+	
+	
+	\subsubsection{SLR(1)-Tabell}
+	
+	Regeluppräkning:	
+	
+	\begin{center}
+		\begin{table}[h!]
+		\begin{tabular}{ | l | l | l | }
+		\hline
+		\textbf{Index} & \textbf{Non-terminal} & \textbf{Rule} \\ \hline
+	0 & A &a b c B \\
+	1 & A &a b d B\\
+	2 & A &A B\\
+	3 & B & q\\
+	4 & A' & A\\
+		\hline
+		\end{tabular}
+		\end{table}
+		\end{center}
+	
+	
+	Aktivitets och gototabell:	
+	
+	\begin{center}
+		\begin{table}[h!]
+		\begin{tabular}{ | l | l | l | }
+		
+	\hline 	
+	\textbf{State} & \textbf{ACTIONS} & \textbf{GOTOS}\\ 
+	\hline		
+		
+
+		\begin{tabular}{ c }
+
+					\textit{Symbol} \\ \hline
+			0\\
+			1\\
+			2\\
+			3\\
+			4\\
+			5\\
+			6\\
+			7\\
+			8\\
+			9\\	
+
+		\end{tabular}
+			
+		&			
+
+		\begin{tabular}{ c c  c  c c c c}
+	
+	\$	& a &	b &	c &	d &	q\\ \hline
+	- &	s2 &	- &	- &	- &	-\\
+	acc	 &	- &	- &	- &	- &	s4\\
+	- &	- &	s5	 &  - &	- &	-\\
+	r2	 &	- &	- &	- &	- &	 r2\\
+	r3	 &	- &	- &	- &	- &	r3\\
+	- &	- &	- &	s6 &	s7 &	- \\
+	- &	- &	- &	- &	- &	s4\\
+	- &	- &	- &	- &	- &	s4\\
+	r0 &	- &	- &	- &	- &	r0\\
+	r1 &	- &	- &	- &	- &	 r1\\
+		\end{tabular}
+						
+		&
+		
+		\begin{tabular}{ c  c }
+
+	
+	A	& B\\ \hline
+	1	& -	\\
+	-	& 3	\\
+	-	 & -	\\
+	-	& -	 \\
+	-	& -	\\
+	-	& -	\\
+	-	& 8	\\
+	-	& 9	\\
+	-	& -	\\
+	-	& -	\\
+		\end{tabular}
+		
+		\\ \hline
+
+		\end{tabular}
+		\end{table}
+		\end{center}
+						
+
+
+	
+	\pagebreak
+	
+	\subsubsection{Parsning}
+	
+	Parsningsutdata (Enkel version):	
+	
+\begin{verbatim}
+B --> q 
+A --> abcB
+B --> q
+A --> AB
+
+-String Accepted-
+\end{verbatim}
+
+	
+	Stacken och indatan ser ut som följer under parsningen:
+
+	
+	\begin{centering}
+		\begin{table}[h!]
+		\begin{tabular}{ | l | l | l | }
+		\hline
+		\textbf{Stack} & \textbf{Input} & \textbf{Rule} \\ \hline
+ 0	&		 a b c q q \$ & \\
+ 0 a 2 	&		  b c q q \$ & \\
+ 0 a 2 b  5 	&		 c q q \$ & \\
+ 0 a 2 b  5 c 6 	&		 q q \$ & \\
+ 0 a 2 b 5 c 6 B 4	&		 q \$ & \\
+&& 3: B --> q\\
+ 0 a 2 b 5 c 6 B 8 	&		 q \$ & \\
+&& 0: A --> abcB\\
+ 0 A 1 	&		 q \$ & \\
+ 0 A 1 q 4 	&		\$ & \\
+&& 3: B --> q\\
+ 0 A 1 B 3 	&		 \$ & \\
+&& 2: A --> AB\\
+ 0 A 1 	&		 \$ & acc \\
+		\hline
+		\end{tabular}
+		\end{table}
+		\end{centering}
+		
+		Detta stämmer med hur parsningen görs manuellt. Vid s i aktivitetstabellen shiftar vi på en bokstav och nästa tillstånd. Vid en läsning kollar vi på tillståndet och nästa inputtecken och hittar aktivitet där ur. Om ett r stöts på reduceras datat enligt regeln enumererad med värdesiffran. Antalet tecken (x2 för tillstånden) tas bort från stacken, och tillståndet där under kollas. Detta, och icketerminalen i regeln används för att hitta nästa tillstånd i gototabellen. Icke-terminalen och tillståndet läggs sedan till och man fortsätter. Då man stöter på \textit{acc} så har strängen accepterats.
+		
+		
+		\pagebreak
+		
+		\Section{ Uppgift 8 }	
+		
+		Utöka grammatiken och översättningsschemat med den något udda produktionen: $S$ $\to$ \textbf{if} $E_1$ \textbf{repeat} $L$ \textbf{until} $E_2 $
+		
+		\subsection{Lösning}
+		
+		Vi lägger till markörer \textit{M} till vilka vi kan hoppa vid sant/falskt på de olika jämförelserna av \textit{E}. Vår produktion ser nu ut som följer:
+		
+		$S$ $\to$ \textbf{if} $E_1$ \textbf{repeat} $M_1$ $L$ \textbf{until} $M_2$ $E_2 $
+		
+		Vi fixar nu backpatching av produktionen som följer:
+		
+		\begin{itemize}
+		
+		\item BackPatch( $E_1$.TrueList, $M_1$.instr )
+
+		\item BackPatch( $E_2$.FalseList, $M_1$.instr )	
+		\item BackPatch( $L$.Nextlist, $M_2$.instr )
+		 
+		\item $S$.nextList = merge( $E_1$.FalseList,$E_2$.TrueList) 
+		
+		\end{itemize}
+		
+		\pagebreak
+		
+		\Section{ Uppgift 9 }
+		
+	Skriv en inputfil till (f)lex som genererar ett program (swc) som räknar antalet tecken, rader, ord, och heltal som matas in. Spara programmet i en fil kallat scan.l.
+	
+	\subsection{Lösning}	
+	
+Följande är koden för programmet:
+
+\begin{footnotesize}
+\begin{verbatim}
+/*** Definition Section ***/
+/* Contain macros, and header-files
+   Any C-code is copied verbatim to 
+   the source file. */
+
+%{
+/* C code to be copied verbatim and headers */
+#include <stdio.h>
+
+static int numbers;
+static int chars;
+static int words;
+static int lines;
+
+%}
+
+	/* Macros for lex */
+
+	/* Only read one input file */
+%option noyywrap
+
+	/* Keywords */
+digit 		[0-9]
+letter 		[a-zA-Z]
+delim 	 	[ \t]
+endofline 	[\n\r]
+whitespace 	({delim}|{e})+
+other 		.
+
+%%
+
+	/*** Rules Section ***/
+	/* Really set yylval and return correct
+	   token from "y.tab.h" when used for parser */
+
+	/* digit+ matches a string of number digits */
+{digit}+	{ numbers++; chars = chars + yyleng;  }
+
+	/* letter+ matches a string of word characters */
+{letter}+	{ words++; chars = chars + yyleng; }
+
+	/* endofline matches the line-breaks */
+{endofline}	{ lines++; chars++; }
+
+	/* . matches any character */
+{other}		{ chars++; }
+
+%%
+
+/*** C Code Section ***/
+
+int main(void)
+{
+	/* Start values for variables */
+	numbers = 0;
+	words = 0;
+	chars = 0;
+	lines = 0;
+
+	/* Call the lexer */
+	yylex();
+
+	/* Print the numbers */
+	printf( "\n" );
+	printf( "%-10s = %d\n", "lines", lines );
+	printf( "%-10s = %d\n", "chars", chars );
+	printf( "%-10s = %d\n", "words", words );
+	printf( "%-10s = %d\n", "integers", numbers );
+	
+	return 0;
+}
+\end{verbatim}	
+
+\end{footnotesize}
+
+
+	\subsection{Resultat}
+	
+	Programmet finns att hitta under \path.\\
+	Koden hetter \textit{scan.l}, och det körbara programmet \textit{swc}.
+	
+	Då programmet startats läser det ända tills en nyrad-EOF påträffas. Det skriver då ut resultatet.
+	
+	En exempelkörning följer:
+	
+\begin{verbatim}
+:~/edu/dv3/comp> swc
+
+abc 123 a2b
+der 43 2344
+
+lines      = 2
+chars      = 24
+words      = 4
+integers   = 4
+\end{verbatim}
+		
+		
+								  % i Sverige har vi normalt inget indrag vid nytt stycke
+								  \setlength{\parindent}{0pt}
+								  % men d�remot lite mellanrum
+								  \setlength{\parskip}{10pt}
+
+% l�gger in rubrik (finns \section, men d� f�r man mycket spillutrymme)
+
+	\newpage
+	\appendix
+
+
+\end{document}
+
+
+

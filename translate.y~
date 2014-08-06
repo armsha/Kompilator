@@ -1,0 +1,73 @@
+
+	/*** Deklaration section ***/
+    
+%{
+	/* C-Code copied to  y.tab.c */
+%}
+
+	/* Declarations of tokens */
+	/* %token <name> */
+	/* %start <name> */
+	/* %left and others */
+
+%union {
+	
+	int val;
+	char *name;
+}
+
+	/* Tokens: */
+
+%token <name> BEGINSY
+%token <name> DOSY
+%token <name> ELSESY
+%token <name> ENDSY
+%token <name> FUNCSY
+%token <name> IFSY
+%token <name> INTSY
+%token <name> PROGSY
+%token <name> READSY
+%token <name> THENSY
+%token <name> WHILESY
+%token <name> WRITSY
+
+%token <name> IDENT
+
+%token PERIOD
+%token SEMI
+%token COMMA
+%token ASSIGN
+%token LPAREN
+%token RPAREN
+%token COLON
+
+%left <val> RELOP /* nonasoc ? for not A<B<C ? or right */
+%left <val> ADDOP
+%left <val> MULOP
+
+%token INTCONST /* Type for this, both val and name ? name else error ? */
+
+%token OTHERSY
+
+
+%%
+	    
+	/*** Translation Rules ***/
+
+	/* <left side>  : <alt 1> {semantic action 1}   */
+	/*              | ...                           */
+	/*              | <alt n> {semantic action n}   */
+	/*              ;                               */
+	    
+	/* $$ is the left side value; $i is the value of i'th symbol */
+	/* Actions can be interplaced with symbols. */
+
+
+	    
+%%
+	   
+	/*** C help routines, copied to y.tab.h ***/
+
+	/* The followin routines are needed in this part of the file */
+	/* yyerror()	*/
+	/* main()	*/

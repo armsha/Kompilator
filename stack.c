@@ -1,6 +1,15 @@
 
+/*
+ *	General stack data-structure
+ *	Handling void *, with possible memory freeing support.
+ *	Providing common interface, implemented via singly linked list.
+ *
+ */
+
 #include "stack.h"
 
+/* Remove top element from stack, the resulting stack returned
+ * If memhandler given, it will be used on the value stored */
 STACK STACKpop( STACK s, memhandler mhf )
 {
 
@@ -15,6 +24,8 @@ STACK STACKpop( STACK s, memhandler mhf )
 
 }
 
+/* Push the value given on the stack
+ * resulting stak returned */
 STACK STACKpush( STACK s, void *v )
 {
 
@@ -26,6 +37,7 @@ STACK STACKpush( STACK s, void *v )
 
 }
 
+/* Get the value at the top of the stack. */
 void *STACKtop( STACK s )
 {
 
@@ -34,6 +46,7 @@ void *STACKtop( STACK s )
 }
 
 
+/* Make an empty stack */
 STACK STACKempty( void )
 {
 
@@ -50,6 +63,7 @@ STACK STACKempty( void )
 }
 
 
+/* Check whether the given stack is empty */
 bool STACKisEmpty( STACK s )
 {
 
@@ -57,7 +71,7 @@ bool STACKisEmpty( STACK s )
 
 }
 
-
+/* Destroy the given stack, poping each element using mhf */
 void STACKdestroy( STACK s, memhandler mhf )
 {
 

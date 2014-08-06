@@ -6,6 +6,7 @@
 
 /* ALLOWABLE TYPES */
 #define INTEGER  1
+#define FLOAT	 2
 #define NOTYPE   4
 
 
@@ -48,7 +49,7 @@
 
 /* GENERAL DEFINITIONS, TYPE AND VARIABLE DECLARATIONS */
 
-#define NKEYS           12   /* number of keywords */ 
+#define NKEYS           15   /* number of keywords */ 
 #define MAXERR          10   /* max errors per row */
 #define LINELENGTH      80
 
@@ -74,7 +75,7 @@ typedef struct _symbol *SYMBOL;
 /* Symbol table routines */
 SYMBOL insert(char *, int, int);
 SYMBOL lookup(char *);
-void destroy();
+void SYMBTABdestroy();
 
 /* Stuff for generating intermediate code */
 #define MAXCODE  200
@@ -105,6 +106,7 @@ struct _expression {                   /* boolean expression */
 QUADLIST makelist(int);
 QUADLIST merge(QUADLIST, QUADLIST);
 void printQList( QUADLIST l, const char *s );
+void QUADLISTdestroy( QUADLIST l );
 
 SYMBOL emit(int, SYMBOL, SYMBOL, int);
 

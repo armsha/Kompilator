@@ -1,0 +1,71 @@
+
+
+\section{Ändringar och Justeringar}
+	För att få mellankodsgenereraren att fungera som önskat har ett antal 
+	element ur de olika tillhandahållna resurserna ändrats. Både i grammatiken
+	och den grundläggande koden, men även ett antal förändringar av hur
+	resultatet ser ut har gjorts.
+
+	\subsection{Grammatik}
+		Dels har ett par regler lagts till i grammatiken motsvarande utökningar
+		på den grundläggande funktionaliteten. Utöver detta har även ett antal regler 
+		modifierats för att undvika konflikter.
+
+		% Ntok, Mark
+		\subsubsection{Markörer}
+			För att kunna hålla reda på de kodpositioner till vilka man behöver hoppa eller
+			förflytta sig användes ett par markörer.\\
+
+			\begin{description}
+				\item[Ntok]	 Markerar ett goto-kommando och ger en lista vilken kan användas för att peka en serie andra delar till kommandot.
+				\item[Mark1] Håller koll på platsen i koden som efterföljer den nuvarande.
+			\end{description}
+
+			Dessa markörer läggs sedan till i kontrollstrukturer och loopar för att generera korrekt mellankod, med hopp till rätt platser. Till exempel ser en if-else-sats ut som följer med markörer: \\
+\verbatim{stat :IFSY expr THENSY Mark1 stat Ntok ELSESY Mark1 stat}\\
+			Med backpatching utfört genererar detta mellankod som ser ut som följer:\\
+\begin{table}[h!]
+	\begin{tabular}{ l | c | c | l }
+\textbf{Position} & \textbf{Kommando} & \textbf{Efterföljande Position} & \textbf{Kommentar} \\ \hline
+i:  &     <expr>   &  i+2 & Jämförelsen görs på rad i \\
+i+1:   &  GOTO    &   i+j &      Hoppa över första och gör andra \\
+i+2:   &  <stat1>  &  ? 	&     Sant utför första stat (längd j) \\
+... &&&\\
+i+j+2:  & GOTO    &   i+j+k+3  & Hoppa till fortsättning då stat är klar \\
+i+j+3:  & <stat2>  &  ?      &   Utför andra stat (längd k) \\
+i+j+k+3:& <forts>  &  ?      &   Fortsätt programm efter \\
+	\end{tabular}
+\end{table}
+		
+			Här har markeringar och efterföljarlistor använts för att ge goto-kommandona sina adresser, då
+			dessa inte var kända medans de lästes, utan endast kunnat utrönas då kommandona i de båda stat
+			laggts till.
+
+		% Repeatsy
+		\subsubsection{Repeat-Until}
+			Som en del av uppgiften skulle en ny regel för "upprepa tills uttrycket uppfylls" läggas till.
+			Denna regel ser ut som följer:\\
+\verbatim{   stat  ->  repeat stat until expr ; 	}\\
+			Med markörer 
+		% Ident/fname kollision
+
+		% Flyttal
+
+	\subsection{Flyttal}
+
+	\subsection{Symboltabell och Åtkomst}
+		% Globala variablerr
+		% Rekursion
+		% Main Scope
+
+		\subsubsection{Konsekvenser}
+
+	\subsection{Ändringar av Kod}
+		% Nya typer, stack-idlist-scope
+		% destroy och andra ändringar
+		% Tillagt och ändrat för repeat och bra utskrifter
+
+
+
+\section{Systembeskrivning}
+	\subsection{Backpatching}

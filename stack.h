@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-
+/* Simple stack type using single links */
 struct _stack 
 {
 	
