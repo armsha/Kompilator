@@ -1,6 +1,6 @@
 
 
-\section{Ändringar och Justeringar}
+\section{ Ändringar och Justeringar }
 	För att få mellankodsgenereraren att fungera som önskat har ett antal 
 	element ur de olika tillhandahållna resurserna ändrats. Både i grammatiken
 	och den grundläggande koden, men även ett antal förändringar av hur
@@ -22,7 +22,9 @@
 			\end{description}
 
 			Dessa markörer läggs sedan till i kontrollstrukturer och loopar för att generera korrekt mellankod, med hopp till rätt platser. Till exempel ser en if-else-sats ut som följer med markörer: \\
-\verbatim{stat :IFSY expr THENSY Mark1 stat Ntok ELSESY Mark1 stat}\\
+\begin{verbatim}
+Stat :IFSY expr THENSY Mark1 stat Ntok ELSESY Mark1 stat
+\end{verbatim}\\
 			Med backpatching utfört genererar detta mellankod som ser ut som följer:\\
 \begin{table}[h!]
 	\begin{tabular}{ l | c | c | l }
@@ -45,13 +47,43 @@ i+j+k+3:& <forts>  &  ?      &   Fortsätt programm efter \\
 		\subsubsection{Repeat-Until}
 			Som en del av uppgiften skulle en ny regel för "upprepa tills uttrycket uppfylls" läggas till.
 			Denna regel ser ut som följer:\\
-\verbatim{   stat  ->  repeat stat until expr ; 	}\\
-			Med markörer 
+\begin[verbatim}
+stat  ->  repeat stat until expr ; 	
+\end{verbatim}\\
+			Med markörer blir detta: \\
+\begin[verbatim}
+stat  : REPEATSY Mark1 stat UNTILSY Mark1 expr SEMI  ; 	
+\end{verbatim}\\
+
+			Då backpatching och så vidare hade tagits hand om för resten av koden krävdes sedan endast tilläggning av följande rader för att ta hand om denna regel.
+
+\begin{verbatim}
+backpatch( $6.falselist, $2 ); 	// Backpatch when expr is false to goto the first mark
+backpatch( $3, $5 );			// Backpatch stat nextlist to mark before expr
+
+$$ = $6.truelist;				// Return nextlist that is the truelist of expr
+\end{verbatim}
+
+			Detta utför korrekt funktionaliteten som upprepar uttrycket \textit{stat} genom att hoppa till den första markeringen så länge som \textit{expr} är falskt, samt fortsätta jämföringen ända tills den blir sann.
+
 		% Ident/fname kollision
+		\subsubsection{Kollisioner}
+			Då grammatiken testades med de symboler och regler som givits upptäcktes kollisioner. Programmet kunde inte se skillnad mellan två olika regler utefter vad som den läst. Dessa regler var de följande:
+\begin{verbatim}
+stat    -> ...
+        | id assop expr ;
+        | fname assop expr ;   // Removed bc collision, handled as id special case
+\end{verbatim}
 
-		% Flyttal
+			Genom att ta bort en av dem, och istället utföra bestämmelsen av hurvida det som tilldelades var en variabel eller ett funktionsnamn med hjälp av en if-sats på identifierarnamnets typ kunde denna kollision undvikas.
 
+	% Flyttal
 	\subsection{Flyttal}
+			För att undersöka funktionaliteten hos typhantering i grammatiken lades ytterligare en typ till. Det existerar alltså numera utöver \textit{integer} även en typ \textit{float}, vilken kan identifieras med nyckelordet "float" i deklarationslistor, eller som <siffror.siffror> vid definitioner av konstanter.
+
+			Då ingen regel, symbol, tolkning, eller hantering av denna typ fanns har ändringar alltså gjorts i såväl token-, och regel-definitionen i y-filen, samt tolkning av nyckelord och konstant-uttryck i lex-filen. Även table.c och lab.h har ändrats för att kunna identifiera och skriva ut denna nya typ.
+
+			Genom att lägga till den nya typen visas styrkan i kompilatorns typhantering. Det blir enkelt att utöka med fler grundläggande typer, utan att nya regler och hanteringar behöver läggas till, förutom de som tar hand om identifiering.
 
 	\subsection{Symboltabell och Åtkomst}
 		% Globala variablerr
