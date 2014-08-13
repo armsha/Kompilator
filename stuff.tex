@@ -1,4 +1,32 @@
+\section{Användarhandledning}
 
+	%Plats
+	Uppgiftens lösning kan återfinnas på följande plats under cs servrar:
+\begin{verbatim}
+/home/c12/c12oor/edu/dv3/lab/
+\end{verbatim}
+	De intressanta filerna är de följande;
+\begin{verbatim}
+lab2*         // Den körbara kompilatorn.
+lab.y         // Huvuddelen av programmet.
+lab.h         // Konstanter och typer använda.
+lab.l         // Lexfil använd.
+idlist.c      // Lista för id uppsamling.
+Makefile      // Kompilerar och bygger allt i ordning.
+stack.c (.h)  // Datatyp använd
+table.c       // Hantering av symboler och kommandon med mera.
+\end{verbatim}
+
+	%Make
+	För att bygga den körbara kompilatorn kan \textit{make} användas i en mapp med alla nödvändiga filer. Denna kommer att utföra alla mellansteg i ordning.
+	
+	%körning
+	Då filen har byggds korrekt kan man sedan köra den. Den tar ingen indata vid uppstart utan väntar på att text matas på standard-input. Den läser sedan tills texten tar slut och matar sedan ut tolkningen av symboler och den genererade mellankoden.	
+	
+	%Fel?
+	Om någonting inte stämmer med den kod man matat in kommer fel rapporteras, och programmet antingen avslutas direkt, eller fortsätta om endast mindre fel ( som en odeklarerad variabel ) upptäckts.
+
+\pagebreak
 
 \section{ Ändringar och Justeringar }
 	För att få mellankodsgenereraren att fungera som önskat har ett antal 
@@ -10,24 +38,28 @@
 		Dels har ett par regler lagts till i grammatiken motsvarande utökningar
 		på den grundläggande funktionaliteten. Utöver detta har även ett antal regler 
 		modifierats för att undvika konflikter.
-
+		
 		% Ntok, Mark
 		\subsubsection{Markörer}
 			För att kunna hålla reda på de kodpositioner till vilka man behöver hoppa eller
-			förflytta sig användes ett par markörer.\\
+			förflytta sig användes ett par markörer.
 
 			\begin{description}
 				\item[Ntok]	 Markerar ett goto-kommando och ger en lista vilken kan användas för att peka en serie andra delar till kommandot.
 				\item[Mark1] Håller koll på platsen i koden som efterföljer den nuvarande.
 			\end{description}
 
-			Dessa markörer läggs sedan till i kontrollstrukturer och loopar för att generera korrekt mellankod, med hopp till rätt platser. Till exempel ser en if-else-sats ut som följer med markörer: \\
+			Dessa markörer läggs sedan till i kontrollstrukturer och loopar för att generera korrekt mellankod, med hopp till rätt platser. Till exempel ser en if-else-sats ut som följer med markörer: 
+			
 \begin{verbatim}
 Stat :IFSY expr THENSY Mark1 stat Ntok ELSESY Mark1 stat
-\end{verbatim}\\
-			Med backpatching utfört genererar detta mellankod som ser ut som följer:\\
-\begin{table}[h!]
-	\begin{tabular}{ l | c | c | l }
+\end{verbatim}
+
+			Med backpatching utfört genererar detta mellankod som ser ut som i tabell \ref{Tab:if}.
+			
+\begin{table}[!htbp]
+	\centering
+	\begin{tabular}{ l | c | p{.17\textwidth} | l }
 \textbf{Position} & \textbf{Kommando} & \textbf{Efterföljande Position} & \textbf{Kommentar} \\ \hline
 i:  &     <expr>   &  i+2 & Jämförelsen görs på rad i \\
 i+1:   &  GOTO    &   i+j &      Hoppa över första och gör andra \\
@@ -37,34 +69,37 @@ i+j+2:  & GOTO    &   i+j+k+3  & Hoppa till fortsättning då stat är klar \\
 i+j+3:  & <stat2>  &  ?      &   Utför andra stat (längd k) \\
 i+j+k+3:& <forts>  &  ?      &   Fortsätt programm efter \\
 	\end{tabular}
+	\caption{Mellankod för if-sats efter backpatching av addresser till gotosatser och så vidare.}
+	\label{Tab:if}
 \end{table}
 		
 			Här har markeringar och efterföljarlistor använts för att ge goto-kommandona sina adresser, då
 			dessa inte var kända medans de lästes, utan endast kunnat utrönas då kommandona i de båda stat
 			laggts till.
 
+
 		% Repeatsy
 		\subsubsection{Repeat-Until}
-			Som en del av uppgiften skulle en ny regel för "upprepa tills uttrycket uppfylls" läggas till.
-			Denna regel ser ut som följer:\\
-\begin[verbatim}
+			Som en del av uppgiften skulle en ny regel för ''upprepa tills uttrycket uppfylls'' läggas till.
+			Denna regel ser ut som följer:
+\begin{verbatim}
 stat  ->  repeat stat until expr ; 	
-\end{verbatim}\\
-			Med markörer blir detta: \\
-\begin[verbatim}
+\end{verbatim}
+			Med markörer blir detta:
+\begin{verbatim}
 stat  : REPEATSY Mark1 stat UNTILSY Mark1 expr SEMI  ; 	
-\end{verbatim}\\
+\end{verbatim}
 
 			Då backpatching och så vidare hade tagits hand om för resten av koden krävdes sedan endast tilläggning av följande rader för att ta hand om denna regel.
 
 \begin{verbatim}
-backpatch( $6.falselist, $2 ); 	// Backpatch when expr is false to goto the first mark
-backpatch( $3, $5 );			// Backpatch stat nextlist to mark before expr
+backpatch( $6.falselist, $2 ); 	// Backpatch expr false to goto the first mark
+backpatch( $3, $5 );            // Backpatch stat nextlist to mark before expr
 
-$$ = $6.truelist;				// Return nextlist that is the truelist of expr
+$$ = $6.truelist;               // Return nextlist that is the truelist of expr
 \end{verbatim}
 
-			Detta utför korrekt funktionaliteten som upprepar uttrycket \textit{stat} genom att hoppa till den första markeringen så länge som \textit{expr} är falskt, samt fortsätta jämföringen ända tills den blir sann.
+			Detta utför korrekt funktionaliteten som upprepar uttrycket \textit{stat} genom att hoppa till den första markeringen så länge som \textit{expr} är falskt, samt fortsätta jämföringen och loopningen ända tills den blir sann.
 
 		% Ident/fname kollision
 		\subsubsection{Kollisioner}
@@ -79,25 +114,65 @@ stat    -> ...
 
 	% Flyttal
 	\subsection{Flyttal}
-			För att undersöka funktionaliteten hos typhantering i grammatiken lades ytterligare en typ till. Det existerar alltså numera utöver \textit{integer} även en typ \textit{float}, vilken kan identifieras med nyckelordet "float" i deklarationslistor, eller som <siffror.siffror> vid definitioner av konstanter.
+			För att undersöka funktionaliteten hos typhantering i grammatiken lades ytterligare en typ till. Det existerar alltså numera utöver \textit{integer} även en typ \textit{float}, vilken kan identifieras med nyckelordet ''float'' i deklarationslistor, eller som <siffror.siffror> vid definition av konstanter.
 
 			Då ingen regel, symbol, tolkning, eller hantering av denna typ fanns har ändringar alltså gjorts i såväl token-, och regel-definitionen i y-filen, samt tolkning av nyckelord och konstant-uttryck i lex-filen. Även table.c och lab.h har ändrats för att kunna identifiera och skriva ut denna nya typ.
 
 			Genom att lägga till den nya typen visas styrkan i kompilatorns typhantering. Det blir enkelt att utöka med fler grundläggande typer, utan att nya regler och hanteringar behöver läggas till, förutom de som tar hand om identifiering.
 
 	\subsection{Symboltabell och Åtkomst}
+	
+		En del ändringar har gjorts angående hur de returnerade symbol och kodtabellerna ser ut, samt även direkta förändingar på hur språket fungerar. Dessa kan i vissa fall få tidigare korrekta program att inte längre fungera som de ska.
+	
 		% Globala variablerr
+		\subsubsection{Globala Variabler}
+		
+			En ändring som utförts var på hurvida globala variabler, eller variabler deklarerade utanför det nuvarande namnrummet, skulle få användas. Då detta leder till läsbarhetsproblem utan att ge mer användbarhet än några möjligheter till enklare sidoeffekter i funktioner, beslutades det att detta fall skulle tas bort.
+			
+			Det är alltså inte längre lagligt att använda variabler deklarerade i yttre funktioner, utan allt som används måste nu mera antingen passeras som argument till den anropade funktionen, eller deklareras på nytt.
+			
+			Ett vanligt problem att kolla för problem mellan de olika versionerna blir alltså \textit{identifier not declared}, vilket dyker upp då man inte deklarerat en variabel korrekt.
+		
 		% Rekursion
+		\subsubsection{Rekursion}
+		
+			För att öka styrkan hos programspråket, och göra det enkelt och elegant att utföra ett flertal uppgifter har rekursion tillåtits. Detta innebär att funktioner kan kallas även från funktionen själv.
+			
+			Denna typ av upprepning är ofta använd och ganska enkel att överskoda. Förutom denna fördel är det även enkelt att lägga till och ta bort, då allt som krävs är att symboltabellen för funktionen får en post till med funktionen själv tillagd vid deklarationen.
+			
+		
 		% Main Scope
+		\subsubsection{Main Scope}
+		
+			Vid utskrift av symboltabell har vi valt att även mata ut det sista namnrummets symboler under ''Main Scope:''. Denna innehåller i de tillhandahållna programmen endast programmet på nivå (\textit{level}) 0.
+			
+			Detta görs då det annars är oklart vad nivåer representerar, samt även för att tillåta ett flertal program och så vidare i samma textfil.
 
 		\subsubsection{Konsekvenser}
+			%ok4.prg
+			
+			De flesta program, även korrekta sådana, genererar efter dessa ändringar annan mellankod. Främst ser symboltabeller annorlunda ut från tidigare, då funktionsnamn följer med i funktionen också, samt utskrifter av ytterligare ett namnrum.
+			
+			Att notera är dock att vissa program som tidigare varit otillåtna nu är tillåtna, och vice versa. Rekursiva funktioner räknas till exempel numera som acceptabla, medans variabler använda från yttre namnrum ger felmeddelanden.
+			
+			Specifikt är testprogrammet \textbf{ok4.prg} inte längre korrekt då variabler \textit{f1v2}, \textit{v2}, och \textit{f2v2} på vissa ställen inte deklareras i de funktioner som de används.
+			
 
 	\subsection{Ändringar av Kod}
 		% Nya typer, stack-idlist-scope
 		% destroy och andra ändringar
 		% Tillagt och ändrat för repeat och bra utskrifter
 
+		Även delar av den tilhandahållna hjälpkoden har modifierats, tagits bort, eller utökats. Bland annat funktioner för att rensa nuvarande symboltabell laggts till, och den är även tillgänglig för andra filer så att den kan sparas undan för att plockas fram senare. Även nya egna datatyper har laggts till, till exempel listor för identifierare, och stackar för namnrum. Mer om dessa ändringar och utökningar under systembeskrivningen.
+
 
 
 \section{Systembeskrivning}
+
+	% Fil-för fil?
+	% Regel för regel?
+	% Backpatching, Scopning, Typning, speciellt och generellt
+	% Datatyper, och hanterning
+	% Kommenterad kod.
+
 	\subsection{Backpatching}

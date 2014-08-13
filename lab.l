@@ -22,8 +22,8 @@ struct key {
 	"do",DOSY,
 	"else",ELSESY,
 	"end", ENDSY,
-	"function",FUNCSY,
 	"float", FLOATSY,
+	"function", FUNCSY,
 	"if", IFSY,
 	"integer", INTSY,
 	"program", PROGSY,
@@ -67,6 +67,8 @@ INT             [0-9]+
 			if (isupper(yytext[i]))
 				yytext[i]=tolower(yytext[i]);
 		strcpy(yylval.name, yytext);
+
+
 		if ((res = search(yylval.name,keytab,NKEYS)) == -1)
 			return IDENT;
 		else

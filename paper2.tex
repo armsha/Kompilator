@@ -1,0 +1,77 @@
+\section{Introduktion}
+I denna laboration ska vi skriva framsidan till en kompilator som ska kompilera ett programspråk som delar likheter med Pascal. Framsidan ska konstruera allting fram till och med genereringen av mellankod. Se nästa underrubrik för den grammatik som genererar språket. 
+
+För att kunna få programmet att fungera ordentligt ska vi även ändra lite i språket eller lägga till lämpliga actions för att slippa pinsamma felmeddelanden. 
+
+
+\newpage
+\subsection{Språkets Grammatik}
+Det relevanta programspråket genereras av följande grammatik [1]:
+\begin{scriptsize}
+\begin{verbatim}
+    prog        ->  program id ; dekllist fndekllist compstat .
+    dekllist    ->  dekllist dekl
+                |   dekl
+    dekl        ->  type idlist ;
+    type        ->  integer
+    idlist      ->  idlist , id
+                |   id
+    fndekllist  ->  fndekllist fndekl
+                |   
+    fndekl      ->  fnhead dekllist fndekllist compstat ;
+    fnhead      ->  function fname ( parlist ) : type ;
+    parlist     ->  dekllist
+                |   
+    fname       ->  id
+    compstat    ->  begin statlist end
+    statlist    ->  statlist stat
+                |   stat
+    stat        ->  compstat
+                |   if expr then stat else stat
+                |   while expr do stat
+                |   write ( exprlist ) ;
+                |   read ( idlist ) ;
+                |   id assop expr ;
+                |   fname assop expr ;
+    exprlist    ->  exprlist , expr
+                |   expr
+    expr        ->  aexp relop aexp
+                |   aexp
+    aexp        ->  aexp addop aexp
+                |   aexp mulop aexp
+                |   fname ( arglist )
+                |   ( expr )
+                |   id
+                |   num
+    arglist     ->  exprlist
+                |   
+\end{verbatim}
+\end{scriptsize}
+
+\input{stuff}
+
+\section{Resultat}
+
+
+
+
+
+\section{Diskussion}
+
+
+
+
+
+\section{Referenser}
+
+\begin{enumerate}
+  \item  \url{http://www8.cs.umu.se/kurser/5DV156/ST14/moment2/}
+  \item Aho, Lam, Sethi, Ullman, \textit{Compilers: Principles, Techniques, \& Tools}, second edition, Addison-Wesley, 2007
+  \item \url{http://www8.cs.umu.se/kurser/5DV156/ST14/slides/DV3-3.pdf}
+  \item \url{http://www8.cs.umu.se/kurser/5DV156/ST14/slides/DV3-4.pdf}
+\end{enumerate}
+
+
+
+
+
