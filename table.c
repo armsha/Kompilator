@@ -181,7 +181,7 @@ void printQList( QUADLIST l, const char *s ){
 /* OUTPUT ROUTINES */
 
 char *typ[5]  = {
-     "", "INTEGER", "FLOAT", "", "NOTYPE " };
+     "", "INTEGER", "FLOAT  ", "", "NOTYPE " };
 
 char *cl[7]   = {
      "", "VAR  ", "FUNC ", "PAR  ", "CONST", "TEMP ", "UNDEF"  };

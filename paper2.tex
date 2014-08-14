@@ -48,20 +48,148 @@ Det relevanta programspråket genereras av följande grammatik [1]:
 \end{verbatim}
 \end{scriptsize}
 
+% En hel del saker här !
 \input{stuff}
 
 \section{Resultat}
 
+	% Verkar funka?
+	Då koden byggs och körs verkar resultatet stämma med det (ändrade) målet. Med de testfiler som använts har det inte stötts på något oförutsett problem, och även tester med flyttal fungerar.
+	
+	\subsection{Outputformat}
+		% hur ser tabeller osv ut, vad är level osv.
+		
+		Resultatet av en körning skrivs ut på det format som beskrivs i denna sektion. 
+		
+		\paragraph{Symboltabeller}
+		skrivs ut namnrum för namnrum, med titeln innan. Titeln är funktionen eller programmets namn, eller ''Main Scope'' för det yttersta.
+		
+		Varje symbol innehåller sedan följande poster, i ordning:
+\begin{verbatim}
+<namn>    type <typnamn> class <klassnamn> offset  <offset> level  <level>
+\end{verbatim}
+		
+		\textit{Namnet} är här variabelnamn, eller värdet hos en konstant. 
+		
+		\textit{Typnamn} är i vårt fall antingen INTEGER eller FLOAT, men skulle kunna utökas med fler grundläggande typer. 
+		
+		\textit{Klassen} anger vilken typ av symbol det är, och kan ange något av värdena:
+		\begin{small}
+		\begin{description}
+		\item[VAR] En variabel.
+		\item[CONST] En konstant.
+		\item[PAR] Verkade inte användas, men skulle kunna användas för att markera parametrar.
+		\item[TEMP] Temporära värden som till exempel kan innehålla delresultat i beräkningar. Upp till 6 kan existera samtidigt.
+		\item[UNDEF] Ges till variabler utan typ, till exempel sådana som skapas vid något fel.
+		\end{description}
+		\end{small}
+		
+		\textit{Offset} anger positionen bland de deklarerade variablerna. Skulle till exempel kunna användas för att lagra dem i någon slags array. Funktioner och konstanter lagras vanligtvis på andra sätt, så dessa ökar alltså inte offset.
+		
+		\textit{Level} representerar djupet som de nuvarande variablerna är hittade på. Main Scope har alltså level 0, och varje program eller funktion som nästlas har en level högre.
+		
+		\paragraph{Mellankod}
+		skrivs ut rad för rad, numrerade från noll och uppåt. Varje rad innehåller följande:
 
+\begin{verbatim}
+<radnr>: <kommando>   <första symbol>   <andra symbol>   <måladress>
+\end{verbatim}
 
+	Det finns en 21 kommandon i mellankoden, vilka opererar på olika antal variabler. Symbolerna är från symboltabellen och innehåller de värden som operationen ska utföras på. 
+	
+	\textit{Måladresser} innehåller det radnummer från vilket exekveringen ska fortsätta efter kommandot utförts. Att speciellt notera är dock att de i jämförelseoperationer ska tolkas som att de ska följas endast då jämförelsen var sann. Vid en falsk jämförelse ska följande rad utföras. Att fortsätta med nästa rad är också vad som händer efter de allra flesta kommandon, dessa har måladress 0. Endast GOTO och jämförelser har måladresser som används. 
+	
+	\subsection{Testkörningar}
+	
+		Vid körning på de flesta av de tilhandahållna exempelprogrammen blir resultatet som väntat. Det stämmer då med facit i allt utom ett par detaljer på grund av de ändringar som gjorts ( Se sektion \ref{Sec:cha} ).	
+		
+		% Kanske ok4 !
+		
+		Nedan följer en körning av ett testprogram, vilket innehåller flyttal, och kördes som:
+\begin{verbatim}
+~c12oor/edu/dv3/lab> lab2 < tstf.prg 
+\end{verbatim}
+
+		Programmet ser ut som följer:
+
+\begin{footnotesize}
+\begin{verbatim}
+program ok1;
+float b, c;
+integer x;
+
+begin
+   read(b, c);
+   x := (b + c) - (b - c);
+   x := (1 + 2.4) - x;
+   while (x > 0) do begin
+      if (b = c) then
+          write(b);
+      else
+          write(c);
+      x := x - 1;
+   end
+end.
+\end{verbatim}\end{footnotesize}
+
+		Detta är den symbol-tabell som genereras:
+\begin{verbatim}
+ok1:
+0        type INTEGER class CONST offset  3 level  1
+2.4      type FLOAT   class CONST offset  3 level  1
+1        type INTEGER class CONST offset  3 level  1
+x        type INTEGER class VAR   offset  2 level  1
+c        type FLOAT   class VAR   offset  1 level  1
+b        type FLOAT   class VAR   offset  0 level  1
+ok1      type INTEGER class FUNC  offset  0 level  1
+
+Main Scope:
+ok1      type INTEGER class FUNC  offset  0 level  0
+\end{verbatim}
+
+		Och följande är mellankoden:
+	
+\begin{footnotesize}	
+\begin{verbatim}
+   0:	FSTART  ok1                0
+   1:	READ    b                  0
+   2:	READ    c                  0
+   3:	PLUS    b        c         0
+   4:	MINUS   b        c         0
+   5:	MINUS   temp0    temp1     0
+   6:	ASS     x        temp0     0
+   7:	PLUS    1        2.4       0
+   8:	MINUS   temp0    x         0
+   9:	ASS     x        temp0     0
+  10:	GT      x        0         12
+  11:	GOTO                       20
+  12:	EQ      b        c         14
+  13:	GOTO                       16
+  14:	WRITE   b                  0
+  15:	GOTO                       17
+  16:	WRITE   c                  0
+  17:	MINUS   x        1         0
+  18:	ASS     x        temp0     0
+  19:	GOTO                       10
+  20:	HALT                       0
+  21:	FEND    ok1	               0
+\end{verbatim}\end{footnotesize}
+
+	Som vi kan se stämmer symboltabellerna, alla variabler finns med i ordning och med rätt typ. Även konstanter har plockats upp där de används.
+	Operationerna stämmer också. Att notera är att de temporära variablerna skapas i ordning vid operationer som MINUS, och tas bort så fort de används.
+	Om man följer hoppen som anges vid målen vid jämförelser och goto's ser man att den representerar samma flöde som while-, och if-else-satserna.
 
 
 \section{Diskussion}
 
+	% Lite jobbig kod att använda...
+	% Annars gick det bra.
 
+	Det var från början väldigt mycket olika program att sätta sig in i, så det tog lång tid innan man förstod hur allt satt ihop. Sedan var det en hel del att läsa och förstå av den tillhandahållna koden. Hur den skulle användas, och vad som var syftet med dess olika delar. En del av den var även lite svårt skriven, och illa kommenterad, vilket gjorde att det tog en stund att förstå vad allt var till för. Några i klassen kommer säkert ha haft det lite jobbigt med uppgiften på grund av detta.
+	
+	När man förstått hur saker hängde ihop och lärde sig hålla isär de olika värden man hade att göra gick det dock bra. Det känns som att man fick en väldigt bra förståelse för de olika programmen och i framtiden skulle kunna skriva i princip hela denna delen av en parsning själv.
 
-
-
+\newpage
 \section{Referenser}
 
 \begin{enumerate}

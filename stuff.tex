@@ -1,4 +1,5 @@
 \section{Användarhandledning}
+	\label{Sec:anv}
 
 	%Plats
 	Uppgiftens lösning kan återfinnas på följande plats under cs servrar:
@@ -11,7 +12,6 @@ lab2*         // Den körbara kompilatorn.
 lab.y         // Huvuddelen av programmet.
 lab.h         // Konstanter och typer använda.
 lab.l         // Lexfil använd.
-idlist.c      // Lista för id uppsamling.
 Makefile      // Kompilerar och bygger allt i ordning.
 stack.c (.h)  // Datatyp använd
 table.c       // Hantering av symboler och kommandon med mera.
@@ -31,8 +31,8 @@ table.c       // Hantering av symboler och kommandon med mera.
 \section{ Ändringar och Justeringar }
 	För att få mellankodsgenereraren att fungera som önskat har ett antal 
 	element ur de olika tillhandahållna resurserna ändrats. Både i grammatiken
-	och den grundläggande koden, men även ett antal förändringar av hur
-	resultatet ser ut har gjorts.
+	och den grundläggande koden, men utöver detta har ett antal förändringar av hur
+	resultatet ser ut också gjorts.
 
 	\subsection{Grammatik}
 		Dels har ett par regler lagts till i grammatiken motsvarande utökningar
@@ -59,15 +59,15 @@ Stat :IFSY expr THENSY Mark1 stat Ntok ELSESY Mark1 stat
 			
 \begin{table}[!htbp]
 	\centering
-	\begin{tabular}{ l | c | p{.17\textwidth} | l }
+	\begin{tabular}{ l | c | p{.17\textwidth} | p{.35\textwidth} }
 \textbf{Position} & \textbf{Kommando} & \textbf{Efterföljande Position} & \textbf{Kommentar} \\ \hline
-i:  &     <expr>   &  i+2 & Jämförelsen görs på rad i \\
-i+1:   &  GOTO    &   i+j &      Hoppa över första och gör andra \\
-i+2:   &  <stat1>  &  ? 	&     Sant utför första stat (längd j) \\
+i:  &     <expr>   &  i+2 & Jämförelsen görs på rad i. (Gå till nästa rad om falsk, annars följs addressen. ) \\
+i+1:   &  GOTO    &   i+j+3 &      Hoppa över första och gör andra. \\
+i+2:   &  <stat1>  &  ? 	&     Sant utför första stat (längd j). \\
 ... &&&\\
-i+j+2:  & GOTO    &   i+j+k+3  & Hoppa till fortsättning då stat är klar \\
-i+j+3:  & <stat2>  &  ?      &   Utför andra stat (längd k) \\
-i+j+k+3:& <forts>  &  ?      &   Fortsätt programm efter \\
+i+j+2:  & GOTO    &   i+j+k+3  & Hoppa till fortsättning då stat är klar. \\
+i+j+3:  & <stat2>  &  ?      &   Utför andra stat (längd k). \\
+i+j+k+3:& <forts>  &  ?      &   Fortsätt program efter. \\
 	\end{tabular}
 	\caption{Mellankod för if-sats efter backpatching av addresser till gotosatser och så vidare.}
 	\label{Tab:if}
@@ -149,6 +149,7 @@ stat    -> ...
 			Detta görs då det annars är oklart vad nivåer representerar, samt även för att tillåta ett flertal program och så vidare i samma textfil.
 
 		\subsubsection{Konsekvenser}
+			\label{Sec:cha}
 			%ok4.prg
 			
 			De flesta program, även korrekta sådana, genererar efter dessa ändringar annan mellankod. Främst ser symboltabeller annorlunda ut från tidigare, då funktionsnamn följer med i funktionen också, samt utskrifter av ytterligare ett namnrum.
@@ -165,7 +166,7 @@ stat    -> ...
 
 		Även delar av den tilhandahållna hjälpkoden har modifierats, tagits bort, eller utökats. Bland annat funktioner för att rensa nuvarande symboltabell laggts till, och den är även tillgänglig för andra filer så att den kan sparas undan för att plockas fram senare. Även nya egna datatyper har laggts till, till exempel listor för identifierare, och stackar för namnrum. Mer om dessa ändringar och utökningar under systembeskrivningen.
 
-
+\pagebreak
 
 \section{Systembeskrivning}
 
@@ -174,5 +175,56 @@ stat    -> ...
 	% Backpatching, Scopning, Typning, speciellt och generellt
 	% Datatyper, och hanterning
 	% Kommenterad kod.
+	
+	Systemet består av ett antal filer, listade under sektion \ref{Sec:anv}, Användarhandledning. Dessa krävs alla för att kunna bygga programmet, och ansvarar vardera för någon deluppgift under kompileringen. I denna sektion beskrivs systemets uppbyggnad samt hur de olika delarna tas omhand.
+	
+	Mer information om specifika delar av programmet kan återfinnas under de kommentarer som lämnats i koden.	
+	
+	\subsection{Lexning}
+		För att kunna läsa en textfil och identifiera olika ord, specialtecken, och numeriska värden krävs vad som kallas en \textit{lexikalanalysator}. Denna tolkar i vårt fall text med hjälp utav reguljära uttryck, och skickar sedan tolkningen vidare i form av \textit{tokens}, samt värden tillhörande dessa. Den läser alltså tecken för tecken och skickar vidare de tokens den hittar till kompilatorn.
+		
+		Ett exempel är tolkningen av ett heltal, vilket återfinns med ett reguljärt uttryck som accepterar en eller flera siffror, och sedan skickar vidare tokenet ''INTCONST'', samt värdet i form av siffrorna i textformat.
+		
+		För att kunna utföra sitt arbete använder lexikalanalysatorn, återfunnen i \textit{lab.l}, även en tabell över nyckelord, söfunktioner, och lite felhantering.
+	
+	\subsection{Parsning}	
+		Då token skickats korrekt ska de sedan tolkas enligt de grammatiska regler som språket följer. Detta görs utav filen \textit{lab.y}, i vilken grammatiken matats in, tillsammans med mellankodsgenerering.
+		
+		Tolkningen efter reglerna görs troligtvis via en algoritm lik någon LR-parsning \footnote{Se referenser till DV3 slides.}. För att detta ska fungera krävs att reglerna är tillräckligt olika, varför ett par regler har ändrats lite från grundgrammatiken. Även tokens vilka inte motsvarar någon text har lagts till som markörer för hjälp med mellankodsgenereringen.
+		
+		Korrekt mellankod genereras genom tilläggande av c-kod på strategiska punkter under reglernas, och denna körs på den  punkt den återfinns i regeln då den tolkas. Mer om mellankodsgenereringen kan återfinnas i följande sektion (\ref{Sec:mel}).
+		
+	\subsection{Mellankod}
+		\label{Sec:mel}
+		
+		Mellankoden som genereras består dels utav tabeller med symboler, med all information dessa behöver. Samt mellankod med korrekta addresser, symboler och kommandon.
+		
+		Genereringen av denna sker i kod tillagd i regler och specialsektioner i \textit{lab.y}, men ett flertal andra filer för datastrukturer, utskrift, och så vidare, används också. Att notera är \textit{table.c}, samt \textit{stack.c}.
+		
+	\subsubsection{Argumentlistor}
+		I till exempel anrop till ''read'' tas ett flertal argument in. För att kunna hantera alla dessa används listor som byggs upp argument för argument. Till detta ändamål har en simpel, enkel-länkad lista implementerats, kallad ''idlist''. Denna används då ett flertal identifierare behöver läsas in, som i read-funktione, eller i deklarationer.
+		
+		Även en implementation av datatypen stack har gjorts (även den enkel-länkad). Denna används bland annat vid uppsamlandet av ett flertal uttryck, som vid anrop till write.
+		
+		Det krävs insamling av värden i dessa fall, då reglerna för uttrycks- eller id-listor inte känner till mycket nog om vad värdena ska användas till, samt att de används till ett flertal olika saker.
+	
+	\subsubsection{Typhantering}
+		Typhanteringen byggdes genom att alltid kolla på värdet som \textit{type}-tokenet tilldelats, även fast det i ursprungsversionen inte fanns fler typer än en. Det krävdes även lite smart strukturering av koden i reglerna så att typen hade lästs in innan den användes.
+		
+		För att kunna hantera de många olika reglerna krävdes det att ett antal olika typer ( listor, stackar, heltal, och strängar med mera ) kunde skickas som värden med tokens. Detta styrdes med .y-filens \%union.
+	
+	\subsubsection{Namnrumshantering}
+		Hanteringen av symboltabeller gjordes via table.c's 	SYMBOL hanteringsfunktioner. Den innehåller funktioner för att kunna lägga till, kolla upp och skriva ut sådanna SYMBOLer. För att kunna använda dem enkelt utfördes dock ett par ändringer. Dels så att variablen symbtab kan nås även från parsaren, och därigenom användas för att spara ett namnrum för senare användning, och dels tilläggandet av en funktion för att ta bort en symboltabell.
+		
+		Även stackdatatypen används vid hanteringen av symboler. Då man stegar in i en ny funktion vill man ju ha kvar den yttre funktionens symboler så att de kan användas när den inre funktionen är klar. Detta plus det faktum att inget ur de yttre funktionerna får användas i de inre tillät oss att hålla de äldre namnrummen på stacken och sedan plocka av dem då de innre är klara. Med ett par extrafunktioner som kallas varje gång man går in och ut ur nya funktioner kan symboltabeller hållas i en stack för varje nivå.
+	
+	\subsubsection{Backpatching}
+		Då koden parsas krävs det ibland att kommandon för hopp till andra rader i koden behöver läggas till. En sådan situation är till exempel i if-satser, där koden ska fortsätta från olika platser beroende på om ett uttryck är sant eller falskt. Detta utförs med ett GOTO kommando i mellankoden, men ett problem uppstår då dessa hopp ska göras frammåt. Addressen för den position till vilket hoppet ska göras har då inte lästs in ännu när GOTO-kommandot matas ut. För att fixa detta används så kallad backpatching\footnote{Se referens till Drakboken, \textit{Compilers: Principles, Techniques, \& Tools}.}.
+		
+		Markörer läggs till i de grammatiska reglerna på strategiska platser. Dels markörer som håller reda på vilken plats i mellankoden som återfinns på ett visst ställe i regeln, och dels markörer som håller reda på en viss GOTO-sats och kan användas för att i efterhand gå igenom dessa och ändra måladressen till de korrekta platserna. Typen som används för att kunna gå tillbaka och ändra måladresser för nästa kodrad att köra efter kommandon kallas nextlist, och de kan innehålla ett antal poster med kodrader, vilka alla kommer att pekas mot det nya målet vid backpatchning. 
+		
+		De flesta av reglerna som kallas stat(ments) har hand om sådanna nextlistor, och backpatchar, mergar och skapar nya sådanna då det behövs. Till exempel för att ta hand om alla de loopar och hopp som behöver göras i kontrollstrukturerna.
+		
+		För att ta hand om jämförelseuttryck används även typen expression, vilken har hand om två nextlistor (och en symbol). En av dessa nextlistor används för fallet då uttrycket var sant, och pekar till jämförelseradens måladdress. Det andra, för då uttrycket var falskt, pekar till en gotosats som hoppar över den kod som körs om det hade varit sant. 
 
-	\subsection{Backpatching}
+\pagebreak
